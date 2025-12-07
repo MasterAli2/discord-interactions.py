@@ -25,9 +25,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime
 from enum import Enum
+from dataclasses import dataclass
 
 
 class UserFlag(Enum):
@@ -346,10 +347,9 @@ class Message:
         self.member = Member(**data["member"]) if "member" in data else None
         self.content = data["content"]
         self.timestamp = datetime.fromisoformat(data["timestamp"])
-        # fmt: off
         self.edited_timestamp = (
-                (t := data["edited_timestamp"]) and datetime.fromisoformat(t)
-        )
+            t := data["edited_timestamp"]
+        ) and datetime.fromisoformat(t)
         self.tts = data["tts"]
         self.mention_everyone = data["mention_everyone"]
         self.mentions = [User(**u) for u in data["mentions"]]
@@ -371,3 +371,23 @@ class Message:
         self.interaction = data.get("interaction")
         self.thread = (c := data.get("thread")) and Channel(**c)
         self.components = data.get("components")  # TODO: convert to component object
+
+
+@dataclass
+class PartialEmoji:
+    id: Optional[int] = None
+    name: Optional[str] = None
+    animated: bool = False
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "name": self.name, "animated": self.animated}
+
+    @classmethod
+    def from_any(cls, emoji: Union[str, "PartialEmoji"]) -> "PartialEmoji":
+        """Convert values of any type into a partial emoji dict."""
+        if isinstance(emoji, str):
+            return cls(name=emoji)
+        elif isinstance(emoji, cls):
+            return emoji
+        else:
+            raise TypeError(f"cannot convert '{type(emoji)}' to partial emoji dict")

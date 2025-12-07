@@ -1,10 +1,8 @@
-from discord_interactions.flask_ext import (
-    Interactions,
-    AfterCommandContext,
-    CommandContext,
-)
+from discord_interactions.ext.flask import Interactions
+from discord_interactions.ext import CommandContext, AfterCommandContext
 from discord_interactions import (
     ApplicationCommand,
+    ApplicationCommandType,
     ApplicationCommandOption,
     ApplicationCommandOptionType,
     ApplicationCommandOptionChoice,
@@ -33,7 +31,7 @@ echo_cmd.add_option(
 rps_cmd = ApplicationCommand(
     "rps",
     "Play Rock, Paper, Scissors!",
-    [
+    options=[
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.STRING,
             name="symbol",
@@ -51,7 +49,7 @@ rps_cmd = ApplicationCommand(
 guess_cmd = ApplicationCommand(
     "guess",
     "Guess my number!",
-    [
+    options=[
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.INTEGER,
             name="number",
@@ -74,7 +72,7 @@ guess_cmd = ApplicationCommand(
 hug_cmd = ApplicationCommand(
     "hug",
     "Hug someone nice",
-    [
+    options=[
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.USER,
             name="cutie",
@@ -87,7 +85,7 @@ hug_cmd = ApplicationCommand(
 generate_cmd = ApplicationCommand(
     "generate",
     "Generate different things",
-    [
+    options=[
         ApplicationCommandOption(
             type=ApplicationCommandOptionType.SUB_COMMAND,
             name="sha1",
@@ -102,6 +100,16 @@ generate_cmd = ApplicationCommand(
             ],
         )
     ],
+)
+
+kick_cmd = ApplicationCommand(
+    "kick",
+    cmd_type=ApplicationCommandType.USER,
+)
+
+delete_cmd = ApplicationCommand(
+    "delete",
+    cmd_type=ApplicationCommandType.MESSAGE,
 )
 
 
@@ -199,6 +207,33 @@ def sha1(_: CommandContext, sub: ApplicationCommandInteractionDataOption):
 @generate.fallback
 def generate_fallback(_: CommandContext):
     return "error: no subcommand provided", True
+
+
+@interactions.command("errorexample")
+def error_example():
+    int("this causes a ValueError to be raised")
+
+
+@error_example.on_error
+def _on_error_example_error(e: Exception):
+    if isinstance(e, ValueError):
+        return "integer conversion failed"
+    else:
+        return "unknown error"
+
+
+@interactions.command(kick_cmd)
+def kick(ctx: CommandContext):
+    user = ctx.interaction.target
+    ...  # kick user
+    return f"kicked {user.username}", True
+
+
+@interactions.command(delete_cmd)
+def delete(ctx: CommandContext):
+    msg = ctx.interaction.target
+    ...  # delete message
+    return f"deleted message || {msg.content} ||", True
 
 
 if __name__ == "__main__":
